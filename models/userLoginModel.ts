@@ -11,7 +11,7 @@ const UserModel = connectionDB.define<UserModel>("users", {
     },
     rol: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
     },
     name: {
         type: DataTypes.STRING,
@@ -27,11 +27,12 @@ const UserModel = connectionDB.define<UserModel>("users", {
     },
     avatar: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
     },
     created_at: {
         type: DataTypes.DATE,
-        allowNull: false,   
+        allowNull: false,
+        defaultValue: DataTypes.NOW,   
         }
 });
 

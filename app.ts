@@ -4,6 +4,7 @@ import UserModel from "./models/userLoginModel";
 import { PORT } from "./config";
 import express from "express";
 import cors from "cors";
+import authRouter from "./routes/authRoutes";
 
 
 export const app = express();
@@ -13,6 +14,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 
 
+app.use("/api/users", authRouter);
 
 const initDB = async (sequelize: Sequelize) => {
     try {
