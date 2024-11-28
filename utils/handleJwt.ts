@@ -10,7 +10,6 @@ export const tokenSign = async (user: Partial<Users>): Promise<string> => {
   const sign = jwt.sign(
     {
       id: user.id,
-      role: user.rol,
     },
     JWT_SECRET as string,
     {
