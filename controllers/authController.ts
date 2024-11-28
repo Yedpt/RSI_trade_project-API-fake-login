@@ -94,7 +94,6 @@ export const loginController = async (req: Request, res: Response) => {
       token: await tokenSign(user),
       user: {
         id: user.id,
-        role: user.rol,
       },
     };
 
