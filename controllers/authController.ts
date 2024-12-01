@@ -4,109 +4,132 @@ import { compare, encrypt } from "../utils/handlePassword";
 import { tokenSign } from "../utils/handleJwt";
 import { Request, Response } from "express";
 import { AuthRequest } from "../interfaces/userLoginInterface";
+import { validationResult } from "express-validator";
 
-export const registerController = async (
-  req: AuthRequest,
+export const loginController = async (
+  req: Request,
   res: Response
-): Promise<void> => {
-  try {
-    const { name, email, password, confirmPassword, created_at } = req.body;
-    let { rol } = req.body;
-
-    if (password !== confirmPassword) {
-      res.status(400).json({ message: "Las contraseñas no coinciden" });
-      return;
-    }
-
-    if (rol === undefined) {
-      rol = "client";
-    } else {
-      const authUser = req.user;
-      if (rol === "admin" && authUser?.rol !== "admin") {
-        res.status(403).json({
-          error: "Access denied. Only admins can create other admins.",
-        });
-        return;
-      }
-    }
-
-    const passwordHashed = await encrypt(password);
-
-    const newUser = {
-      name,
-      email,
-      password: passwordHashed,
-      rol,
-      created_at,
-    };
-
-    const existingUserByEmail = await UserModel.findOne({ where: { email } });
-    if (existingUserByEmail) {
-      res.status(409).json({ message: "Email already in use" });
-      return;
-    }
-    const existingUserByName = await UserModel.findOne({ where: { name } });
-    if (existingUserByName) {
-      res.status(409).json({ message: "Name already in use" });
-      return;
-    }
-
-    await UserModel.create(newUser);
-
-    const token = await tokenSign({
-      name: newUser.name,
-      email: newUser.email,
-      password: newUser.password,
-      rol: newUser.rol,
-    });
-
-    res.status(201).json({ message: "✅ User created successfully", token });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "❌ Error creating user" });
-  }
-};
-
-export const loginController = async (req: Request, res: Response) => {
+): Promise<Response> => {
   try {
     const userEmail = req.body.email;
     const loginPassword = req.body.password;
 
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     if (!userEmail || !loginPassword) {
-      handleHttpError(res, "❌ EMAIL_OR_PASSWORD_MISSING", 400);
-      return;
+      return res.status(400).json({ message: "❌ EMAIL_OR_PASSWORD_MISSING" });
     }
 
     const user = await UserModel.findOne({ where: { email: userEmail } });
     if (!user) {
-      handleHttpError(res, "❌ USER_NOT_EXISTS", 404);
-      return;
+      return res.status(404).json({ message: "❌ USER_NOT_EXISTS" });
     }
 
     const passwordHashed = user.password;
     const checkPassword = await compare(loginPassword, passwordHashed);
     if (!checkPassword) {
-      handleHttpError(res, "❌ PASSWORD_INVALID", 401);
-      return;
+      return res.status(401).json({ message: "❌ PASSWORD_INVALID" });
     }
 
     const sessionData = {
       token: await tokenSign(user),
       user: {
         id: user.id,
+        name: user.name,
+        email: user.email,
+        rol: user.rol,
       },
     };
 
-    res.status(200).send({ sessionData });
+    return res.status(200).json({ sessionData });
   } catch (error: any) {
     console.error("❌ Error in login process:", error.message || error);
 
     if (error.name === "SequelizeConnectionError") {
-      handleHttpError(res, "❌ DATABASE_CONNECTION_ERROR", 500);
+      return res.status(500).json({ message: "❌ DATABASE_CONNECTION_ERROR" });
     } else if (error.name === "SequelizeValidationError") {
-      handleHttpError(res, "❌ DATABASE_VALIDATION_ERROR", 400);
+      return res.status(400).json({ message: "❌ DATABASE_VALIDATION_ERROR" });
     } else {
-      handleHttpError(res, "❌ ERROR_LOGIN_USER", 500);
+      return res.status(500).json({ message: "❌ ERROR_LOGIN_USER" });
     }
   }
+};
+
+export const registerController = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  // First, check validation results
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      message: "Los datos ingresados no son válidos",
+      errors: errors.array(),
+    });
+  }
+
+  try {
+    const { name, email, password } = req.body;
+    let { rol } = req.body;
+
+    // Set default role if not specified
+    rol = rol || "client";
+
+    // Check for existing user
+    const existingUserByEmail = await UserModel.findOne({ where: { email } });
+    if (existingUserByEmail) {
+      return res
+        .status(409)
+        .json({ message: "El correo electrónico ya está en uso" });
+    }
+
+    const existingUserByName = await UserModel.findOne({ where: { name } });
+    if (existingUserByName) {
+      return res
+        .status(409)
+        .json({ message: "El nombre de usuario ya está en uso" });
+    }
+
+    // Encrypt password
+    const passwordHashed = await encrypt(password);
+
+    // Create new user
+    const newUser = await UserModel.create({
+      name,
+      email,
+      password: passwordHashed,
+      rol,
+      created_at: new Date().toISOString(), // Convert to ISO string to resolve Date type issue
+    });
+
+    // Generate token
+    const token = await tokenSign({
+      name: newUser.name,
+      email: newUser.email,
+      rol: newUser.rol,
+    });
+
+    return res.status(201).json({
+      message: "✅ Usuario creado exitosamente",
+      token,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        rol: newUser.rol,
+      },
+    });
+  } catch (error: any) {
+    console.error(error);
+    return res.status(500).json({ message: "❌ Error al crear el usuario" });
+  }
+};
+
+export default {
+  loginController,
+  registerController,
 };
