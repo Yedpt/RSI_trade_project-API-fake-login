@@ -14,7 +14,6 @@ export const loginController = async (
     const userEmail = req.body.email;
     const loginPassword = req.body.password;
 
-    // Validate input
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -63,7 +62,6 @@ export const registerController = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  // First, check validation results
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -76,10 +74,8 @@ export const registerController = async (
     const { name, email, password } = req.body;
     let { rol } = req.body;
 
-    // Set default role if not specified
     rol = rol || "client";
 
-    // Check for existing user
     const existingUserByEmail = await UserModel.findOne({ where: { email } });
     if (existingUserByEmail) {
       return res
@@ -94,19 +90,16 @@ export const registerController = async (
         .json({ message: "El nombre de usuario ya está en uso" });
     }
 
-    // Encrypt password
     const passwordHashed = await encrypt(password);
 
-    // Create new user
     const newUser = await UserModel.create({
       name,
       email,
       password: passwordHashed,
       rol,
-      created_at: new Date().toISOString(), // Convert to ISO string to resolve Date type issue
+      created_at: new Date().toISOString(),
     });
 
-    // Generate token
     const token = await tokenSign({
       name: newUser.name,
       email: newUser.email,
