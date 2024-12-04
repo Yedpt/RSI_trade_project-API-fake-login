@@ -38,9 +38,7 @@ export const loginController = async (
       token: await tokenSign(user),
       user: {
         id: user.id,
-        name: user.name,
-        email: user.email,
-        rol: user.rol,
+        role: user.rol,
       },
     };
 
