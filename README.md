@@ -75,7 +75,7 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
     ```json
     POST
     {
-      "username": "usuario",
+      "email": "usuario@example.com",
       "password": "contraseña"
     }
     ```
@@ -84,8 +84,13 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
 
     ```json
     {
-      "status": "success",
-      "message": "Inicio de sesión exitoso."
+      "sessionData": {
+        "token": ".........",
+        "user": {
+            "id": ....,
+            "name": "........"
+        }
+    }
     }
     ```
 
