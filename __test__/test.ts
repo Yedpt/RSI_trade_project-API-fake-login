@@ -1,1 +1,0 @@
-// la config de testing

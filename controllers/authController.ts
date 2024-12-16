@@ -79,7 +79,7 @@ export const loginController = async (req: Request, res: Response) => {
 
     const user = await UserModel.findOne({ where: { email: userEmail } });
     if (!user) {
-      handleHttpError(res, "❌ USER_NOT_EXISTS", 404);
+      handleHttpError(res, "❌ USER_NOT_EXISTS", 422);
       return;
     }
 
