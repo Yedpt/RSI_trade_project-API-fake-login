@@ -30,7 +30,7 @@
     "@types/express": "^5.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll --no-cache --detectOpenHandles",
     "dev": "ts-node-dev --respawn ./app.ts"
   },
   "keywords": [],
